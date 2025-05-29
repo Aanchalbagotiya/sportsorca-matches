@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upcoming Soccer Matches</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Upcoming Soccer Matches</h1>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search teams..." />
+    <button onclick="fetchMatches()">Refresh Matches</button>
+    <button id="toggleTheme">🌙 Dark Mode</button>
+  </div>
+
+  <div id="loader" class="loader">Loading...</div>
+  <div id="matches"></div>
+
+  <script>
+    const matchesContainer = document.getElementById("matches");
+    const loader = document.getElementById("loader");
+    const toggleTheme = document.getElementById("toggleTheme");
+
+    let allMatches = [];
+
+    const fetchMatches = async () => {
+      loader.style.display = "block";
+      matchesContainer.innerHTML = "";
+
+      try {
+        const response = await fetch("http://localhost:3000/matches");
+        const data = await response.json();
+        allMatches = data.events || [];
+        renderMatches(allMatches);
+      } catch (error) {
+        matchesContainer.innerHTML = "<p>Failed to load matches.</p>";
+      }
+
+      loader.style.display = "none";
+    };
+
+    const renderMatches = (matches) => {
+      matchesContainer.innerHTML = "";
+
+      matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      matches.forEach(match => {
+        const matchCard = document.createElement("div");
+        matchCard.className = "match-card";
+
+        const date = new Date(match.date);
+        const formattedDate = date.toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+
+        matchCard.innerHTML = `
+          <div class="teams">
+            <img src="https://via.placeholder.com/40" alt="home" />
+            <span>${match.homeTeam}</span>
+            <strong>vs</strong>
+            <span>${match.awayTeam}</span>
+            <img src="https://via.placeholder.com/40" alt="away" />
+          </div>
+          <p>Date: ${formattedDate}</p>
+        `;
+
+        matchesContainer.appendChild(matchCard);
+      });
+    };
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allMatches.filter(
+        m =>
+          m.homeTeam.toLowerCase().includes(term) ||
+          m.awayTeam.toLowerCase().includes(term)
+      );
+      renderMatches(filtered);
+    });
+
+    toggleTheme.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      toggleTheme.textContent = document.body.classList.contains("dark-mode")
+        ? "☀️ Light Mode"
+        : "🌙 Dark Mode";
+    });
+
+    fetchMatches();
+  </script>
+</body>
+</html>
